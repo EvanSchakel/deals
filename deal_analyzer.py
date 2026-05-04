@@ -449,7 +449,7 @@ Examples:
         """,
     )
     parser.add_argument("--title",         type=str,   help="Listing title")
-    parser.add_argument("--price",         type=float, help="Listed price in USD")
+    parser.add_argument("--price",         type=str,   help="Listed price in USD")
     parser.add_argument("--condition",     type=str,   default="", help="Condition (e.g. Like New, Good)")
     parser.add_argument("--description",   type=str,   default="", help="Listing description text")
     parser.add_argument("--source",        type=str,   default="", help="Source (e.g. eBay, Swappa)")
@@ -467,9 +467,14 @@ def main() -> None:
         return
 
     if args.title and args.price is not None:
+        price = parse_price(args.price)
+        if price is None:
+            print(f"Error: Could not parse a valid price from '{args.price}'", file=sys.stderr)
+            sys.exit(1)
+
         listing = Listing(
             title=args.title,
-            price=args.price,
+            price=price,
             condition=args.condition,
             description=args.description,
             source=args.source,
