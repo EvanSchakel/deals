@@ -42,6 +42,19 @@ def colorize(text: str, *codes: str) -> str:
     return "".join(codes) + text + Color.RESET
 
 
+# ── Input sanitization ────────────────────────────────────────────────────────
+
+# Matches standard ANSI escape sequences (e.g., colors, cursor movements)
+# This prevents Terminal Output Injection (ANSI Spoofing)
+ANSI_ESCAPE = re.compile(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from untrusted user input."""
+    if text is None:
+        return None
+    return ANSI_ESCAPE.sub('', str(text))
+
+
 # ── Core data types ───────────────────────────────────────────────────────────
 
 @dataclass
@@ -413,11 +426,11 @@ def interactive_mode() -> None:
                     continue
 
                 listing = Listing(
-                    title=title,
+                    title=strip_ansi(title),
                     price=price,
-                    condition=condition,
-                    description=description,
-                    source=source,
+                    condition=strip_ansi(condition),
+                    description=strip_ansi(description),
+                    source=strip_ansi(source),
                 )
                 result = score_listing(listing)
                 print_result(result)
@@ -468,11 +481,11 @@ def main() -> None:
 
     if args.title and args.price is not None:
         listing = Listing(
-            title=args.title,
+            title=strip_ansi(args.title),
             price=args.price,
-            condition=args.condition,
-            description=args.description,
-            source=args.source,
+            condition=strip_ansi(args.condition),
+            description=strip_ansi(args.description),
+            source=strip_ansi(args.source),
         )
         result = score_listing(listing)
         print_result(result)
