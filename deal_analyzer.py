@@ -42,6 +42,11 @@ def colorize(text: str, *codes: str) -> str:
     return "".join(codes) + text + Color.RESET
 
 
+# ── Pre-compiled Regexes ──────────────────────────────────────────────────────
+
+RAM_REGEX = re.compile(r"(\d+)\s*gb")
+STORAGE_REGEX = re.compile(r"512|1\s*tb|2\s*tb")
+
 # ── Core data types ───────────────────────────────────────────────────────────
 
 @dataclass
@@ -209,7 +214,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
     # ── RAM gate ───────────────────────────────────────────────────────────────
     ram_gate = product.get("ram_gate")
     if ram_gate:
-        rams = [int(r) for r in re.findall(r"(\d+)\s*gb", full_text.lower())
+        rams = [int(r) for r in RAM_REGEX.findall(full_text.lower())
                 if int(r) >= ram_gate]
         if not rams:
             warnings.append(
@@ -219,7 +224,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
             base_score = max(1, base_score - 1)
 
     # ── Storage gate ───────────────────────────────────────────────────────────
-    if product.get("require_512") and not re.search(r"512|1\s*tb|2\s*tb", full_text.lower()):
+    if product.get("require_512") and not STORAGE_REGEX.search(full_text.lower()):
         warnings.append(
             "This product filter requires 512GB+ storage. "
             "Listing does not confirm it — may be the base 256GB config."
