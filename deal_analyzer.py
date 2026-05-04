@@ -401,11 +401,11 @@ def interactive_mode() -> None:
             # Gather listing details
             try:
                 print()
-                title       = input("  Title       : ").strip()
-                price_input = input("  Price ($)   : ").strip()
-                condition   = input("  Condition   : ").strip()
-                description = input("  Description : ").strip()
-                source      = input("  Source      : ").strip()
+                title       = input("  Title            : ").strip()
+                price_input = input("  Price ($)        : ").strip()
+                condition   = input(f"  Condition {colorize('(opt)', Color.DIM)}  : ").strip()
+                description = input(f"  Description {colorize('(opt)', Color.DIM)}: ").strip()
+                source      = input(f"  Source {colorize('(opt)', Color.DIM)}     : ").strip()
 
                 price = parse_price(price_input)
                 if price is None:
