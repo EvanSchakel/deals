@@ -87,6 +87,9 @@ def parse_price(raw: str) -> Optional[float]:
 
 # ── Scam detection ────────────────────────────────────────────────────────────
 
+def _check_phrases(text: str, phrases: list[str], label: str) -> list[str]:
+    return [f"[{label}] {phrase}" for phrase in phrases if phrase in text]
+
 def check_scam(text: str) -> tuple[str, list[str]]:
     """
     Scan listing text for scam / red-flag phrases.
@@ -96,17 +99,9 @@ def check_scam(text: str) -> tuple[str, list[str]]:
     lower = text.lower()
     signals: list[str] = []
 
-    for phrase in SCAM_HIGH:
-        if phrase in lower:
-            signals.append(f"[HIGH] {phrase}")
-
-    for phrase in SCAM_MEDIUM:
-        if phrase in lower:
-            signals.append(f"[MEDIUM] {phrase}")
-
-    for phrase in SCAM_FLAGS:
-        if phrase in lower:
-            signals.append(f"[FLAG] {phrase}")
+    signals.extend(_check_phrases(lower, SCAM_HIGH, "HIGH"))
+    signals.extend(_check_phrases(lower, SCAM_MEDIUM, "MEDIUM"))
+    signals.extend(_check_phrases(lower, SCAM_FLAGS, "FLAG"))
 
     if any("[HIGH]" in s for s in signals):
         return "high", signals
