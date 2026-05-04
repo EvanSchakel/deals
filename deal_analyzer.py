@@ -42,6 +42,16 @@ def colorize(text: str, *codes: str) -> str:
     return "".join(codes) + text + Color.RESET
 
 
+# ── Input Sanitization ────────────────────────────────────────────────────────
+
+# Pre-compiled regex for matching ANSI escape sequences (e.g., terminal color codes)
+ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences to prevent terminal spoofing."""
+    return ANSI_ESCAPE.sub('', text)
+
+
 # ── Core data types ───────────────────────────────────────────────────────────
 
 @dataclass
@@ -51,6 +61,12 @@ class Listing:
     description: str = ""
     condition:   str = ""
     source:      str = ""
+
+    def __post_init__(self):
+        self.title = strip_ansi(self.title)
+        self.description = strip_ansi(self.description)
+        self.condition = strip_ansi(self.condition)
+        self.source = strip_ansi(self.source)
 
 @dataclass
 class AnalysisResult:
