@@ -42,6 +42,21 @@ def colorize(text: str, *codes: str) -> str:
     return "".join(codes) + text + Color.RESET
 
 
+# ── Security & Sanitization ───────────────────────────────────────────────────
+
+# Compiled regex to match ANSI escape sequences (prevents Terminal Output Injection / ANSI Spoofing)
+ANSI_ESCAPE_RE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+
+def strip_ansi(text: Optional[str]) -> Optional[str]:
+    """
+    Remove ANSI escape sequences from a string.
+    Gracefully returns None if given None (useful for optional CLI args).
+    """
+    if text is None:
+        return None
+    return ANSI_ESCAPE_RE.sub('', text)
+
+
 # ── Core data types ───────────────────────────────────────────────────────────
 
 @dataclass
@@ -401,11 +416,11 @@ def interactive_mode() -> None:
             # Gather listing details
             try:
                 print()
-                title       = input("  Title       : ").strip()
-                price_input = input("  Price ($)   : ").strip()
-                condition   = input("  Condition   : ").strip()
-                description = input("  Description : ").strip()
-                source      = input("  Source      : ").strip()
+                title       = strip_ansi(input("  Title       : ").strip())
+                price_input = strip_ansi(input("  Price ($)   : ").strip())
+                condition   = strip_ansi(input("  Condition   : ").strip())
+                description = strip_ansi(input("  Description : ").strip())
+                source      = strip_ansi(input("  Source      : ").strip())
 
                 price = parse_price(price_input)
                 if price is None:
@@ -468,11 +483,11 @@ def main() -> None:
 
     if args.title and args.price is not None:
         listing = Listing(
-            title=args.title,
+            title=strip_ansi(args.title),
             price=args.price,
-            condition=args.condition,
-            description=args.description,
-            source=args.source,
+            condition=strip_ansi(args.condition),
+            description=strip_ansi(args.description),
+            source=strip_ansi(args.source),
         )
         result = score_listing(listing)
         print_result(result)
