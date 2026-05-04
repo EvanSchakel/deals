@@ -95,22 +95,26 @@ def check_scam(text: str) -> tuple[str, list[str]]:
     """
     lower = text.lower()
     signals: list[str] = []
+    has_high = False
+    has_medium = False
 
     for phrase in SCAM_HIGH:
         if phrase in lower:
             signals.append(f"[HIGH] {phrase}")
+            has_high = True
 
     for phrase in SCAM_MEDIUM:
         if phrase in lower:
             signals.append(f"[MEDIUM] {phrase}")
+            has_medium = True
 
     for phrase in SCAM_FLAGS:
         if phrase in lower:
             signals.append(f"[FLAG] {phrase}")
 
-    if any("[HIGH]" in s for s in signals):
+    if has_high:
         return "high", signals
-    if any("[MEDIUM]" in s for s in signals):
+    if has_medium:
         return "medium", signals
     if signals:
         return "low", signals
