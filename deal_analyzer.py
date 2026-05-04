@@ -67,15 +67,20 @@ class AnalysisResult:
 
 # ── Price parsing ─────────────────────────────────────────────────────────────
 
+_PRICE_STRIP_RE = re.compile(r"(to|[-–])\s*\$?[\d,]+")
+_PRICE_DIGITS_RE = re.compile(r"[^\d.]")
+_RAM_RE = re.compile(r"(\d+)\s*gb")
+_STORAGE_RE = re.compile(r"512|1\s*tb|2\s*tb")
+
 def parse_price(raw: str) -> Optional[float]:
     """
     Extract the first plausible price from a string like '$1,299' or '1299.99'.
     Returns None if nothing looks like a price.
     """
     # Strip everything before the first dollar sign
-    raw = re.sub(r"(to|[-–])\s*\$?[\d,]+", "", str(raw or ""))
+    raw = _PRICE_STRIP_RE.sub("", str(raw or ""))
     for token in raw.split():
-        digits = re.sub(r"[^\d.]", "", token)
+        digits = _PRICE_DIGITS_RE.sub("", token)
         try:
             value = float(digits)
             if 50 < value < 30_000:
@@ -209,7 +214,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
     # ── RAM gate ───────────────────────────────────────────────────────────────
     ram_gate = product.get("ram_gate")
     if ram_gate:
-        rams = [int(r) for r in re.findall(r"(\d+)\s*gb", full_text.lower())
+        rams = [int(r) for r in _RAM_RE.findall(full_text.lower())
                 if int(r) >= ram_gate]
         if not rams:
             warnings.append(
@@ -219,7 +224,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
             base_score = max(1, base_score - 1)
 
     # ── Storage gate ───────────────────────────────────────────────────────────
-    if product.get("require_512") and not re.search(r"512|1\s*tb|2\s*tb", full_text.lower()):
+    if product.get("require_512") and not _STORAGE_RE.search(full_text.lower()):
         warnings.append(
             "This product filter requires 512GB+ storage. "
             "Listing does not confirm it — may be the base 256GB config."
