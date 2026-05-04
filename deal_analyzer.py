@@ -143,6 +143,43 @@ def match_product(title: str, description: str = "") -> Optional[str]:
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
 
+
+def evaluate_price(ratio: float, product: dict) -> tuple[int, str]:
+    if ratio <= product.get("great", 0.78):
+        return 9, "Great deal — well below market."
+    elif ratio <= product.get("good", 0.84):
+        return 7, "Good deal — meaningfully below retail."
+    elif ratio <= 0.94:
+        return 5, "Decent — moderate discount."
+    elif ratio <= 1.01:
+        return 3, "Near retail — not much savings."
+    else:
+        return 1, "Above retail — don't buy."
+
+def apply_condition_modifiers(cond: str, base_score: int, notes: list[str]) -> int:
+    cond = cond.lower()
+    if any(c in cond for c in ["new", "sealed", "open box", "open-box"]):
+        notes.append("Condition bonus: new/open-box (+1)")
+        return min(10, base_score + 1)
+    elif any(c in cond for c in ["fair", "acceptable", "poor"]):
+        notes.append("Condition penalty: fair/acceptable (-2)")
+        return max(1, base_score - 2)
+    return base_score
+
+def apply_scam_modifiers(scam_level: str, base_score: int, verdict: str, warnings: list[str]) -> tuple[int, str]:
+    if scam_level == "high":
+        base_score = min(base_score, 2)
+        verdict = "⚠️  SCAM WARNING — do not proceed."
+        warnings.append("HIGH scam risk detected. Do not pay outside a buyer-protected platform.")
+    elif scam_level == "medium":
+        base_score = max(1, base_score - 2)
+        warnings.append("Moderate scam signals — verify seller carefully.")
+    elif scam_level == "low":
+        base_score = max(1, base_score - 1)
+        warnings.append("Minor flags present — proceed with caution.")
+    return base_score, verdict
+
+
 def score_listing(listing: Listing) -> AnalysisResult:
     """
     Core scoring logic.
@@ -184,21 +221,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
     ratio    = listing.price / retail
 
     # ── Base price score ───────────────────────────────────────────────────────
-    if ratio <= product.get("great", 0.78):
-        base_score = 9
-        verdict    = "Great deal — well below market."
-    elif ratio <= product.get("good", 0.84):
-        base_score = 7
-        verdict    = "Good deal — meaningfully below retail."
-    elif ratio <= 0.94:
-        base_score = 5
-        verdict    = "Decent — moderate discount."
-    elif ratio <= 1.01:
-        base_score = 3
-        verdict    = "Near retail — not much savings."
-    else:
-        base_score = 1
-        verdict    = "Above retail — don't buy."
+    base_score, verdict = evaluate_price(ratio, product)
 
     notes.append(
         f"Matched: {product_name}  |  "
@@ -227,25 +250,10 @@ def score_listing(listing: Listing) -> AnalysisResult:
         base_score = max(1, base_score - 2)
 
     # ── Condition modifiers ────────────────────────────────────────────────────
-    cond = listing.condition.lower()
-    if any(c in cond for c in ["new", "sealed", "open box", "open-box"]):
-        base_score = min(10, base_score + 1)
-        notes.append("Condition bonus: new/open-box (+1)")
-    elif any(c in cond for c in ["fair", "acceptable", "poor"]):
-        base_score = max(1, base_score - 2)
-        notes.append("Condition penalty: fair/acceptable (-2)")
+    base_score = apply_condition_modifiers(listing.condition, base_score, notes)
 
     # ── Scam modifiers ─────────────────────────────────────────────────────────
-    if scam_level == "high":
-        base_score = min(base_score, 2)
-        verdict    = "⚠️  SCAM WARNING — do not proceed."
-        warnings.append("HIGH scam risk detected. Do not pay outside a buyer-protected platform.")
-    elif scam_level == "medium":
-        base_score = max(1, base_score - 2)
-        warnings.append("Moderate scam signals — verify seller carefully.")
-    elif scam_level == "low":
-        base_score = max(1, base_score - 1)
-        warnings.append("Minor flags present — proceed with caution.")
+    base_score, verdict = apply_scam_modifiers(scam_level, base_score, verdict, warnings)
 
     # ── Clamp ──────────────────────────────────────────────────────────────────
     final_score = max(1, min(10, base_score))
