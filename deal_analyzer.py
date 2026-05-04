@@ -187,6 +187,9 @@ def score_listing(listing: Listing) -> AnalysisResult:
     if ratio <= product.get("great", 0.78):
         base_score = 9
         verdict    = "Great deal — well below market."
+    elif product.get("insane_only") and ratio <= 1.01:
+        base_score = 3
+        verdict    = "Near retail — not much savings."
     elif ratio <= product.get("good", 0.84):
         base_score = 7
         verdict    = "Good deal — meaningfully below retail."
@@ -367,9 +370,10 @@ def print_product_list() -> None:
         for name, p in sorted(items, key=lambda x: x[1]["retail"]):
             retail = p["retail"]
             good   = int(retail * p.get("good",  0.84))
+            good_str = f"{'-':>8}" if p.get("insane_only") else f"${good:>7,}"
             great  = int(retail * p.get("great", 0.78))
             flags  = " ★" if name == p.get("note", "")[:10] else ""
-            print(f"  {name[:40]:<40} ${retail:>7,}  ${good:>7,}  ${great:>7,}{flags}")
+            print(f"  {name[:40]:<40} ${retail:>7,}  {good_str}  ${great:>7,}{flags}")
 
     print(f"\n{colorize('═' * 65, Color.BOLD)}\n")
 
