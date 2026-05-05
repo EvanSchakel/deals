@@ -90,9 +90,13 @@ class AnalysisResult:
 
 # ── Price parsing ─────────────────────────────────────────────────────────────
 
+# Strips trailing ranges like "to $1,500" or "- 1500" to only capture the first price.
 _PRICE_STRIP_RE = re.compile(r"(to|[-–])\s*\$?[\d,]+")
+# Matches any character that is NOT a digit or a period. Used to clean price strings.
 _PRICE_DIGITS_RE = re.compile(r"[^\d.]")
+# Extracts numbers followed by "gb" (ignoring whitespace) to find RAM sizes.
 _RAM_RE = re.compile(r"(\d+)\s*gb")
+# Matches specific storage sizes (512, 1tb, 2tb) to verify storage requirements.
 _STORAGE_RE = re.compile(r"512|1\s*tb|2\s*tb")
 
 def parse_price(raw: str) -> Optional[float]:
@@ -493,7 +497,15 @@ def main() -> None:
         print_product_list()
         return
 
-    if args.title and args.price is not None:
+    if args.title is not None or args.price is not None:
+        if not args.title or args.price is None:
+            print(colorize("Error: Both --title and --price must be provided for one-shot mode.", Color.RED), file=sys.stderr)
+            sys.exit(1)
+
+        if args.price <= 0:
+            print(colorize("Error: --price must be a positive number.", Color.RED), file=sys.stderr)
+            sys.exit(1)
+
         listing = Listing(
             title=strip_ansi(args.title),
             price=args.price,

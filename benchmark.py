@@ -1,6 +1,6 @@
 import timeit
 
-setup = """
+setup = r"""
 import re
 
 def parse_price(raw: str):
@@ -24,14 +24,14 @@ data = [
 ] * 100
 """
 
-stmt = """
+stmt = r"""
 for text in data:
     parse_price(text)
 """
 
 print("Baseline:", timeit.timeit(stmt, setup, number=100))
 
-setup_optimized = """
+setup_optimized = r"""
 import re
 
 _STRIP_RE = re.compile(r"(to|[-–])\s*\$?[\d,]+")
@@ -58,7 +58,7 @@ data = [
 ] * 100
 """
 
-stmt_optimized = """
+stmt_optimized = r"""
 for text in data:
     parse_price_opt(text)
 """

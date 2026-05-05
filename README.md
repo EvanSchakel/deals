@@ -1,5 +1,7 @@
 # 🍎 Deal Analyzer
 
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+
 A command-line tool for scoring used and refurbished Apple tech listings — no subscriptions, no API keys, no external dependencies.
 
 Paste a listing title and price, get back a **1–10 deal score**, scam signal detection, and a plain-English verdict in under a second.
@@ -26,6 +28,13 @@ Paste a listing title and price, get back a **1–10 deal score**, scam signal d
 ---
 
 ## Usage
+
+**Quick Start**:
+```bash
+git clone https://github.com/OWNER/REPO.git
+cd deal-analyzer
+python deal_analyzer.py
+```
 
 **Interactive mode** (prompts you through each field):
 ```bash
