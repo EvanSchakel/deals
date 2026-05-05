@@ -41,6 +41,13 @@ def colorize(text: str, *codes: str) -> str:
         return text
     return "".join(codes) + text + Color.RESET
 
+# Pattern to match most ANSI escape sequences
+ANSI_ESCAPE = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from a string."""
+    return ANSI_ESCAPE.sub('', text)
+
 
 # ── Core data types ───────────────────────────────────────────────────────────
 
@@ -417,11 +424,11 @@ def interactive_mode() -> None:
             # Gather listing details
             try:
                 print()
-                title       = input("  Title       : ").strip()
-                price_input = input("  Price ($)   : ").strip()
-                condition   = input("  Condition   : ").strip()
-                description = input("  Description : ").strip()
-                source      = input("  Source      : ").strip()
+                title       = strip_ansi(input("  Title       : ").strip())
+                price_input = strip_ansi(input("  Price ($)   : ").strip())
+                condition   = strip_ansi(input("  Condition   : ").strip())
+                description = strip_ansi(input("  Description : ").strip())
+                source      = strip_ansi(input("  Source      : ").strip())
 
                 price = parse_price(price_input)
                 if price is None:
@@ -484,11 +491,11 @@ def main() -> None:
 
     if args.title and args.price is not None:
         listing = Listing(
-            title=args.title,
+            title=strip_ansi(args.title),
             price=args.price,
-            condition=args.condition,
-            description=args.description,
-            source=args.source,
+            condition=strip_ansi(args.condition or ""),
+            description=strip_ansi(args.description or ""),
+            source=strip_ansi(args.source or ""),
         )
         result = score_listing(listing)
         print_result(result)
