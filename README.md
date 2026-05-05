@@ -58,9 +58,10 @@ python deal_analyzer.py --list-products
   Good deal — meaningfully below retail.
   Scam risk: NONE
 
-  Notes:
+  Score Breakdown:
     → Matched: MacBook Pro 14" M4 Pro  |  $1,420 vs $1,999 retail  |  29.0% off
-    → Condition bonus: like new (+1)
+    → Base score: 7/10
+    → Condition bonus: new/open-box (+1)
 ────────────────────────────────────────────────────────────
 ```
 

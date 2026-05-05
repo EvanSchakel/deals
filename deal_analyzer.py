@@ -92,17 +92,35 @@ class AnalysisResult:
 
 _PRICE_STRIP_RE = re.compile(r"(to|[-–])\s*\$?[\d,]+")
 _PRICE_DIGITS_RE = re.compile(r"[^\d.]")
-_RAM_RE = re.compile(r"(\d+)\s*gb")
-_STORAGE_RE = re.compile(r"512|1\s*tb|2\s*tb")
+_RAM_RE = re.compile(r"\b(8|16|18|24|32|36|48|64|96|128|192)\s*gb\b", re.IGNORECASE)
+_STORAGE_RE = re.compile(r"\b(?:512(?:\s*gb)?|1\s*tb|2\s*tb|4\s*tb|8\s*tb)\b", re.IGNORECASE)
 
 def parse_price(raw: str) -> Optional[float]:
     """
     Extract the first plausible price from a string like '$1,299' or '1299.99'.
     Returns None if nothing looks like a price.
     """
-    # Strip everything before the first dollar sign
-    raw = _PRICE_STRIP_RE.sub("", str(raw or ""))
-    for token in raw.split():
+    if not raw:
+        return None
+
+    raw = str(raw)
+    tokens = raw.split()
+
+    # Pass 1: Look for explicit dollar amounts
+    for token in tokens:
+        if '$' in token:
+            digits = _PRICE_DIGITS_RE.sub("", token)
+            try:
+                value = float(digits)
+                if 50 < value < 30_000:
+                    return value
+            except ValueError:
+                continue
+
+    # Pass 2: Fallback to numbers, but ignore specs (GB, TB, mm, hz, inch, etc.)
+    for token in tokens:
+        if re.search(r'(gb|tb|hz|mm|inch|”|")', token.lower()):
+            continue
         digits = _PRICE_DIGITS_RE.sub("", token)
         try:
             value = float(digits)
@@ -110,13 +128,21 @@ def parse_price(raw: str) -> Optional[float]:
                 return value
         except ValueError:
             continue
+
     return None
 
 
 # ── Scam detection ────────────────────────────────────────────────────────────
 
 def _check_phrases(text: str, phrases: list[str], label: str) -> list[str]:
-    return [f"[{label}] {phrase}" for phrase in phrases if phrase in text]
+    found = []
+    for phrase in phrases:
+        # Use regex to match on word boundaries to avoid partial matches
+        # re.escape makes sure any regex characters in phrase are treated literally
+        pattern = r'\b' + re.escape(phrase) + r'\b'
+        if re.search(pattern, text):
+            found.append(f"[{label}] {phrase}")
+    return found
 
 def check_scam(text: str) -> tuple[str, list[str]]:
     """
@@ -148,18 +174,49 @@ def match_product(title: str, description: str = "") -> Optional[str]:
     Checks every tag string against the combined title + description.
     Returns the product name with the longest matching tag, or None.
     """
-    text = (title + " " + description).lower()
+    raw_text = (title + " " + description).lower()
     # Expand common abbreviations
-    text = text.replace("mbp", "macbook pro").replace("mba", "macbook air")
+    raw_text = raw_text.replace("mbp", "macbook pro").replace("mba", "macbook air")
+
+    # Normalize text: strip dashes, quotes, 'inch', and extra spaces
+    text = re.sub(r'["\'-]', ' ', raw_text)
+    text = text.replace("inch", " ")
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    text_tokens = set(text.split())
 
     best_name: Optional[str] = None
     best_tag_len = 0
+    best_match_type = 0 # 2 for exact, 1 for token overlap
 
     for product_name, product in PRODUCTS.items():
         for tag in product.get("tags", []):
-            if tag in text and len(tag) > best_tag_len:
-                best_name = product_name
-                best_tag_len = len(tag)
+            tag_norm = re.sub(r'["\'-]', ' ', tag.lower())
+            tag_norm = tag_norm.replace("inch", " ")
+            tag_norm = re.sub(r'\s+', ' ', tag_norm).strip()
+
+            # Pass 1: Exact substring match
+            if tag_norm in text:
+                if best_match_type < 2 or (best_match_type == 2 and len(tag) > best_tag_len):
+                    best_name = product_name
+                    best_tag_len = len(tag)
+                    best_match_type = 2
+
+            # Pass 2: Token overlap match (all words in text must exist in tag, for incomplete specs)
+            if best_match_type < 2:
+                tag_tokens = set(tag_norm.split())
+                # For overlap, we check if title tokens (not description) are a subset of tag tokens
+                title_text = re.sub(r'["\'-]', ' ', title.lower())
+                title_text = title_text.replace("mbp", "macbook pro").replace("mba", "macbook air")
+                title_text = title_text.replace("inch", " ")
+                title_text = re.sub(r'\s+', ' ', title_text).strip()
+                title_tokens = set(title_text.split())
+
+                if len(title_tokens) >= 2 and title_tokens.issubset(tag_tokens):
+                    if best_match_type < 1 or (best_match_type == 1 and len(tag) > best_tag_len):
+                        best_name = product_name
+                        best_tag_len = len(tag)
+                        best_match_type = 1
 
     return best_name
 
@@ -231,6 +288,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
         f"${listing.price:.0f} vs ${retail} retail  |  "
         f"{(1 - ratio) * 100:.1f}% off"
     )
+    notes.append(f"Base score: {base_score}/10")
 
     # ── RAM gate ───────────────────────────────────────────────────────────────
     ram_gate = product.get("ram_gate")
@@ -243,6 +301,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
                 "Verify before buying."
             )
             base_score = max(1, base_score - 1)
+            notes.append("Missing specs penalty: RAM not confirmed (-1)")
 
     # ── Storage gate ───────────────────────────────────────────────────────────
     if product.get("require_512") and not _STORAGE_RE.search(full_text.lower()):
@@ -251,6 +310,7 @@ def score_listing(listing: Listing) -> AnalysisResult:
             "Listing does not confirm it — may be the base 256GB config."
         )
         base_score = max(1, base_score - 2)
+        notes.append("Missing specs penalty: Storage not confirmed (-2)")
 
     # ── Condition modifiers ────────────────────────────────────────────────────
     cond = listing.condition.lower()
@@ -266,12 +326,15 @@ def score_listing(listing: Listing) -> AnalysisResult:
         base_score = min(base_score, 2)
         verdict    = "⚠️  SCAM WARNING — do not proceed."
         warnings.append("HIGH scam risk detected. Do not pay outside a buyer-protected platform.")
+        notes.append("Scam penalty: High risk (capped at 2)")
     elif scam_level == "medium":
         base_score = max(1, base_score - 2)
         warnings.append("Moderate scam signals — verify seller carefully.")
+        notes.append("Scam penalty: Medium risk (-2)")
     elif scam_level == "low":
         base_score = max(1, base_score - 1)
         warnings.append("Minor flags present — proceed with caution.")
+        notes.append("Scam penalty: Low risk (-1)")
 
     # ── Clamp ──────────────────────────────────────────────────────────────────
     final_score = max(1, min(10, base_score))
@@ -360,7 +423,7 @@ def print_result(result: AnalysisResult) -> None:
 
     # Notes
     if result.notes:
-        print(f"\n  {colorize('Notes:', Color.DIM)}")
+        print(f"\n  {colorize('Score Breakdown:', Color.DIM)}")
         for note in result.notes:
             print(f"    {colorize('→ ' + note, Color.DIM)}")
 
