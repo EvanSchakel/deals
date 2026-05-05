@@ -44,6 +44,16 @@ def colorize(text: str, *codes: str) -> str:
 
 # ── Core data types ───────────────────────────────────────────────────────────
 
+def sanitize_text(text: str) -> str:
+    """Remove ANSI escape sequences and control characters from untrusted input."""
+    if not text:
+        return text
+    # Remove ANSI escape sequences (CSI sequences)
+    text = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', text)
+    # Remove other control characters except newline and tab
+    text = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', text)
+    return text
+
 @dataclass
 class Listing:
     title:       str
@@ -51,6 +61,12 @@ class Listing:
     description: str = ""
     condition:   str = ""
     source:      str = ""
+
+    def __post_init__(self):
+        self.title = sanitize_text(self.title)
+        self.description = sanitize_text(self.description)
+        self.condition = sanitize_text(self.condition)
+        self.source = sanitize_text(self.source)
 
 @dataclass
 class AnalysisResult:
