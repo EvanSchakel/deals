@@ -146,26 +146,32 @@ def check_scam(text: str) -> tuple[str, list[str]]:
 
 # ── Product matching ──────────────────────────────────────────────────────────
 
+# Precompute the flattened list of tags, sorted by length descending
+# This allows match_product to be O(1) in the number of products/tags for the first match
+# instead of checking all tags to find the longest one.
+_ALL_TAGS = []
+for _product_name, _product in PRODUCTS.items():
+    for _tag in _product.get("tags", []):
+        _ALL_TAGS.append((_tag, _product_name))
+_ALL_TAGS.sort(key=lambda x: len(x[0]), reverse=True)
+
 def match_product(title: str, description: str = "") -> Optional[str]:
     """
     Find the best matching product name from the PRODUCTS database.
-    Checks every tag string against the combined title + description.
+    Checks tags against the combined title + description.
     Returns the product name with the longest matching tag, or None.
     """
     text = (title + " " + description).lower()
     # Expand common abbreviations
     text = text.replace("mbp", "macbook pro").replace("mba", "macbook air")
 
-    best_name: Optional[str] = None
-    best_tag_len = 0
+    # Since _ALL_TAGS is sorted by length descending, the first match is guaranteed
+    # to be the longest possible matching tag.
+    for tag, product_name in _ALL_TAGS:
+        if tag in text:
+            return product_name
 
-    for product_name, product in PRODUCTS.items():
-        for tag in product.get("tags", []):
-            if tag in text and len(tag) > best_tag_len:
-                best_name = product_name
-                best_tag_len = len(tag)
-
-    return best_name
+    return None
 
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
