@@ -432,11 +432,12 @@ def interactive_mode() -> None:
             # Gather listing details
             try:
                 print()
-                title       = strip_ansi(input("  Title       : ").strip())
-                price_input = strip_ansi(input("  Price ($)   : ").strip())
-                condition   = strip_ansi(input("  Condition   : ").strip())
-                description = strip_ansi(input("  Description : ").strip())
-                source      = strip_ansi(input("  Source      : ").strip())
+                opt = colorize("(opt)", Color.DIM)
+                title       = strip_ansi(input("  Title             : ").strip())
+                price_input = strip_ansi(input("  Price ($)         : ").strip())
+                condition   = strip_ansi(input(f"  Condition {opt}   : ").strip())
+                description = strip_ansi(input(f"  Description {opt} : ").strip())
+                source      = strip_ansi(input(f"  Source {opt}      : ").strip())
 
                 price = parse_price(price_input)
                 if price is None:
