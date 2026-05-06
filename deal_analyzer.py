@@ -55,10 +55,12 @@ def sanitize_text(text: str) -> str:
     """Remove ANSI escape sequences and control characters from untrusted input."""
     if not text:
         return text
-    # Remove ANSI escape sequences (CSI sequences)
-    text = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', text)
-    # Remove other control characters except newline and tab
-    text = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', text)
+    # Remove ANSI escape sequences
+    text = ANSI_ESCAPE.sub('', text)
+    # Replace newlines and carriage returns with spaces to prevent output spoofing
+    text = text.replace('\r', ' ').replace('\n', ' ')
+    # Remove other control characters except tab
+    text = re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', text)
     return text
 
 @dataclass
