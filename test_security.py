@@ -74,5 +74,13 @@ class TestSecurity(unittest.TestCase):
                     self.assertEqual(listing.description, "Description")
                     self.assertEqual(listing.source, "eBay")
 
+    def test_terminal_output_spoofing_sanitization(self):
+        from deal_analyzer import sanitize_text
+        malicious_input = "MacBook Air 13\" M5 24GB\r  Listed: $100.00\n  Matched: MacBook Air 13\" M5 24GB\n"
+        sanitized = sanitize_text(malicious_input)
+        self.assertNotIn("\r", sanitized)
+        self.assertNotIn("\n", sanitized)
+        self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
+
 if __name__ == '__main__':
     unittest.main()
