@@ -1,63 +1,88 @@
-# 🍎 Deal Analyzer
+<div align="center">
+  <h1>🍎 Deal Analyzer</h1>
+  <p><i>A blazing fast, zero-dependency CLI tool for scoring used and refurbished Apple tech listings.</i></p>
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-
-A command-line tool for scoring used and refurbished Apple tech listings — no subscriptions, no API keys, no external dependencies.
-
-Paste a listing title and price, get back a **1–10 deal score**, scam signal detection, and a plain-English verdict in under a second.
-
----
-
-## Features
-
-- **Deal scoring** — compares price to retail thresholds (good / great) for 25+ Apple products
-- **Product matching** — automatically identifies the product from listing text using tag-based matching
-- **RAM & storage gates** — flags listings that don't confirm required specs
-- **Scam detection** — checks for 40+ high, medium, and flag-level signals (iCloud lock variants, sketchy payment methods, off-platform contact, condition disclosures)
-- **Interactive mode** — step-by-step prompts for scoring one listing at a time
-- **One-shot CLI mode** — pipe in arguments directly for scripting or batch use
-- **Product browser** — `--list-products` shows every tracked product with retail price and deal thresholds
+  [![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+</div>
 
 ---
 
-## Requirements
+## 🎯 The Problem
+Finding a genuinely good deal on used Apple hardware is tough. Prices fluctuate, scammers use the same tricks over and over, and knowing exactly what "15% off retail" looks like requires doing math in your head.
 
-- Python 3.10+
-- No third-party packages — pure stdlib
+## 💡 The Solution
+**Deal Analyzer** instantly scores listings from 1 to 10. Just paste a title and a price.
+It matches the product, compares the price to hardcoded "good" and "great" thresholds, and checks the text against 40+ known scam and flag signals.
+
+It runs locally, requires no subscriptions, uses no API keys, and has zero external dependencies.
 
 ---
 
-## Usage
+## ✨ Features
 
-**Quick Start**:
+- **📊 Deal Scoring** — Automatically compares price to retail thresholds (good / great) for 25+ Apple products.
+- **🏷️ Product Matching** — Intelligently identifies the exact product model from messy listing text using tag-based matching.
+- **🛡️ RAM & Storage Gates** — Flags suspicious listings that try to hide missing base specs.
+- **🚨 Scam Detection** — Checks for 40+ high, medium, and flag-level signals (e.g., iCloud lock variants, sketchy payment methods, off-platform contact).
+- **🕹️ Interactive Mode** — Step-by-step terminal prompts for scoring listings manually.
+- **⚡ One-Shot CLI Mode** — Pipe in arguments directly for ultra-fast scripting or batch processing.
+- **📖 Product Browser** — `--list-products` displays the entire database of tracked products, retail prices, and deal thresholds.
+
+---
+
+## 🚀 Installation
+
+You can install Deal Analyzer directly via `pip` or use it from the source.
+
+### Option 1: Install via pip (Recommended)
+This method installs the `deal-analyzer` command globally on your system.
+
+```bash
+git clone https://github.com/OWNER/REPO.git
+cd deal-analyzer
+pip install .
+```
+
+### Option 2: Run from Source
 ```bash
 git clone https://github.com/OWNER/REPO.git
 cd deal-analyzer
 python deal_analyzer.py
 ```
 
-**Interactive mode** (prompts you through each field):
+*Requires Python 3.10 or higher.*
+
+---
+
+## 🛠️ Usage
+
+### Interactive Mode
+Run the tool without arguments to enter the step-by-step interactive prompt:
 ```bash
-python deal_analyzer.py
+deal-analyzer
 ```
 
-**One-shot mode** (great for scripts):
+### One-Shot CLI Mode (Great for scripts)
+Provide the details directly via flags to get an instant score:
 ```bash
-python deal_analyzer.py --title "MacBook Air M5 24GB 512GB" --price 1050
-python deal_analyzer.py --title "MacBook Pro 14 M4 Pro 24GB Like New" --price 1420 --condition "Like New"
-python deal_analyzer.py --title "Apple Watch Ultra 2 49mm" --price 580 --source "eBay"
+deal-analyzer --title "MacBook Air M3 24GB 512GB" --price 1050
+deal-analyzer --title "MacBook Pro 14 M4 Pro 24GB Like New" --price 1420 --condition "Like New"
+deal-analyzer --title "Apple Watch Ultra 2 49mm" --price 580 --source "eBay"
 ```
 
-**List all tracked products and thresholds:**
+### List Tracked Products
+View the database of tracked products, their retail prices, and scoring thresholds:
 ```bash
-python deal_analyzer.py --list-products
+deal-analyzer --list-products
 ```
 
 ---
 
-## Example Output
+## 📈 Example Output
 
-```
+```text
 ────────────────────────────────────────────────────────────
   MacBook Pro 14 M4 Pro 24GB
   Listed: $1,420.00  (retail: $1,999)
@@ -75,62 +100,31 @@ python deal_analyzer.py --list-products
 
 ---
 
-## Scoring Scale
+## 📏 Scoring Scale
 
 | Score | Meaning |
 |-------|---------|
-| 9–10  | Great deal — well below market |
-| 7–8   | Good deal — meaningful discount |
-| 5–6   | Decent — moderate savings |
-| 3–4   | Near retail — not worth it used |
-| 1–2   | Above retail or scam risk |
+| **9–10** | Great deal — well below market value |
+| **7–8**  | Good deal — meaningful discount |
+| **5–6**  | Decent — moderate savings |
+| **3–4**  | Near retail — not worth it used |
+| **1–2**  | Above retail or major scam risk detected |
 
-Scores are capped at **2** for HIGH scam risk signals and reduced by 2 for MEDIUM signals.
-
----
-
-## Extending the Product Database
-
-Open `products.py` and add an entry to the `PRODUCTS` dict:
-
-```python
-"iPhone 16 Pro 256GB": {
-    "retail": 1099,
-    "good":   0.84,   # flag as "good" at 16% off → $923
-    "great":  0.76,   # flag as "great" at 24% off → $835
-    "ram_gate": None,
-    "tags": ["iphone 16 pro", "ip16 pro", "iphone 16pro"],
-    "upgrades": ["phone"],
-},
-```
-
-No code changes needed anywhere else — the analyzer picks it up automatically.
+*Note: Scores are capped at **2** for HIGH scam risk signals and reduced by **2** for MEDIUM signals.*
 
 ---
 
-## Adding Scam Signals
+## 🤝 Contributing
 
-Open `products.py` and add phrases to any of the three lists:
+We welcome contributions! Deal Analyzer is designed to be easily extensible.
 
-```python
-SCAM_HIGH   # → score capped at 2
-SCAM_MEDIUM # → score -2
-SCAM_FLAGS  # → score -1 (condition disclosures)
-```
+- **Adding a Product**: Open `products.py` and add a new entry to the `PRODUCTS` dictionary.
+- **Adding Scam Signals**: Open `products.py` and add phrases to `SCAM_HIGH`, `SCAM_MEDIUM`, or `SCAM_FLAGS`.
 
----
-
-## Project Structure
-
-```
-deal-analyzer/
-├── deal_analyzer.py   # main program — scoring, CLI, output formatting
-├── products.py        # product database and scam signal lists
-└── README.md
-```
+Please see our [Contributing Guidelines](CONTRIBUTING.md) for more details.
 
 ---
 
-## License
+## 📄 License
 
-MIT — use it, fork it, extend it however you like.
+This project is licensed under the [MIT License](LICENSE) — use it, fork it, extend it however you like.
