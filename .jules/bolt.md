@@ -1,3 +1,3 @@
-## 2024-05-15 - Optimizing longest-string matching against a static dictionary
-**Learning:** Checking a large string for the longest matching substring from a nested dictionary structure takes $O(P \times T)$ where P is products and T is tags. For static lookup tables (like product dictionaries), iterating over them multiple times dynamically during calls is highly inefficient.
-**Action:** When a longest-string match is needed over static nested dictionaries, precompute a flat list of `(tag, item)` tuples, sort them by `len(tag)` descending at module scope, and then simply iterate until the first match is found. This makes the search O(1) matching length evaluation and resulted in a 71% speedup.
+## 2024-05-14 - String sanitization is a bottleneck
+**Learning:** `str.replace` and `re.sub` inside `sanitize_text` are executed multiple times since `sanitize_text` is called for multiple fields upon `Listing` instantiation. Python's `str.translate` using a precomputed `maketrans` table is significantly faster than using multiple `str.replace` calls and uncompiled regex substitutions.
+**Action:** Replace multiple chained replacements with `str.translate` for stripping control characters and replacing newlines.

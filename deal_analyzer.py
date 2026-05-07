@@ -51,17 +51,25 @@ def strip_ansi(text: str) -> str:
 
 # ── Core data types ───────────────────────────────────────────────────────────
 
+# Precompute translation table for sanitizing control characters and newlines
+# This is faster than using multiple str.replace() and re.sub() calls.
+_SANITIZE_TRANS = str.maketrans(
+    {
+        '\r': ' ',
+        '\n': ' ',
+        **{chr(i): None for i in range(0x20) if i not in (9, 10, 13)}, # tab is 9, newline is 10, carriage return is 13
+        chr(0x7f): None
+    }
+)
+
 def sanitize_text(text: str) -> str:
     """Remove ANSI escape sequences and control characters from untrusted input."""
     if not text:
         return text
     # Remove ANSI escape sequences
     text = ANSI_ESCAPE.sub('', text)
-    # Replace newlines and carriage returns with spaces to prevent output spoofing
-    text = text.replace('\r', ' ').replace('\n', ' ')
-    # Remove other control characters except tab
-    text = re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', text)
-    return text
+    # Replace newlines with spaces and remove control chars (except tab)
+    return text.translate(_SANITIZE_TRANS)
 
 @dataclass
 class Listing:
