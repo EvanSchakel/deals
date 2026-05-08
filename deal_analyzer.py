@@ -16,6 +16,7 @@ No external dependencies — pure Python stdlib.
 """
 
 import argparse
+import math
 import re
 import sys
 from dataclasses import dataclass, field
@@ -511,8 +512,8 @@ def main() -> None:
             print(colorize("Error: Both --title and --price must be provided for one-shot mode.", Color.RED), file=sys.stderr)
             sys.exit(1)
 
-        if args.price <= 0:
-            print(colorize("Error: --price must be a positive number.", Color.RED), file=sys.stderr)
+        if args.price <= 0 or math.isnan(args.price) or math.isinf(args.price):
+            print(colorize("Error: --price must be a positive, finite number.", Color.RED), file=sys.stderr)
             sys.exit(1)
 
         listing = Listing(
