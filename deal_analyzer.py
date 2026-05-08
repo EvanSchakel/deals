@@ -51,6 +51,9 @@ def strip_ansi(text: str) -> str:
 
 # ── Core data types ───────────────────────────────────────────────────────────
 
+# Matches control characters except tab to prevent output spoofing
+_CONTROL_CHARS_RE = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')
+
 def sanitize_text(text: str) -> str:
     """Remove ANSI escape sequences and control characters from untrusted input."""
     if not text:
@@ -59,8 +62,8 @@ def sanitize_text(text: str) -> str:
     text = ANSI_ESCAPE.sub('', text)
     # Replace newlines and carriage returns with spaces to prevent output spoofing
     text = text.replace('\r', ' ').replace('\n', ' ')
-    # Remove other control characters except tab
-    text = re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', text)
+    # Remove other control characters except tab (Performance optimization: use pre-compiled regex)
+    text = _CONTROL_CHARS_RE.sub('', text)
     return text
 
 @dataclass
