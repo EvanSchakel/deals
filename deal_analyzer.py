@@ -66,6 +66,8 @@ def sanitize_text(text: str) -> str:
     """Remove ANSI escape sequences and control characters from untrusted input."""
     if not text:
         return text
+    # Prevent DoS by capping length
+    text = text[:10000]
     # Remove ANSI escape sequences
     text = ANSI_ESCAPE.sub('', text)
     # Replace newlines with spaces and remove control chars (except tab)
@@ -255,8 +257,9 @@ def score_listing(listing: Listing) -> AnalysisResult:
     # ── RAM gate ───────────────────────────────────────────────────────────────
     ram_gate = product.get("ram_gate")
     if ram_gate:
+        # Limit RAM string length to prevent integer conversion DoS
         rams = [int(r) for r in _RAM_RE.findall(full_text.lower())
-                if int(r) >= ram_gate]
+                if len(r) <= 10 and int(r) >= ram_gate]
         if not rams:
             warnings.append(
                 f"RAM not confirmed in listing — this product requires {ram_gate}GB+. "
