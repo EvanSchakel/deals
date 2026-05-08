@@ -441,16 +441,23 @@ def interactive_mode() -> None:
             try:
                 print()
                 opt = colorize("(opt)", Color.DIM)
-                title       = strip_ansi(input("  Title             : ").strip())
-                price_input = strip_ansi(input("  Price ($)         : ").strip())
+
+                while True:
+                    title = strip_ansi(input("  Title             : ").strip())
+                    if title:
+                        break
+                    print(f"  {colorize('Title is required.', Color.RED)}")
+
+                while True:
+                    price_input = strip_ansi(input("  Price ($)         : ").strip())
+                    price = parse_price(price_input)
+                    if price is not None:
+                        break
+                    print(f"  {colorize('Could not parse a valid price. Please try again.', Color.RED)}")
+
                 condition   = strip_ansi(input(f"  Condition {opt}   : ").strip())
                 description = strip_ansi(input(f"  Description {opt} : ").strip())
                 source      = strip_ansi(input(f"  Source {opt}      : ").strip())
-
-                price = parse_price(price_input)
-                if price is None:
-                    print(f"\n  {colorize('Could not parse a price from that input.', Color.RED)}\n")
-                    continue
 
                 listing = Listing(
                     title=title,
