@@ -10,3 +10,7 @@
 **Vulnerability:** Denial of Service (DoS) via memory exhaustion or integer string conversion limits (`ValueError: Exceeds the limit for integer string conversion`).
 **Learning:** Python limits large string-to-int conversions by default (4300 digits). Processing arbitrarily large strings in regexes or conversions can crash the application or exhaust memory.
 **Prevention:** Always cap untrusted input length at the earliest ingestion point (e.g. `text = text[:10000]`), and validate length before type conversions (e.g. `len(r) <= 10` before `int(r)`).
+## 2025-05-04 - Explicit Input Validation over Silent Truncation
+**Vulnerability:** Generic string sanitization utilities silently truncated input strings to prevent ReDoS, which violates the implicit contract of utilities and could mask data loss or malicious payloads.
+**Learning:** Security constraints like input length limits should be enforced explicitly at application boundaries (e.g., CLI arg parsing or interactive prompts) providing user feedback, while inner utilities should fail securely (e.g., raising ValueError) instead of silently altering data.
+**Prevention:** Implement input validation for length and type at the ingestion point and handle validation errors gracefully before passing data to internal processing functions.
