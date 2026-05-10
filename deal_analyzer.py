@@ -46,6 +46,8 @@ ANSI_ESCAPE = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape sequences from a string."""
+    if len(text) > 10000:
+        raise ValueError("Input length exceeds maximum allowed limit.")
     return ANSI_ESCAPE.sub('', text)
 
 
@@ -66,8 +68,6 @@ def sanitize_text(text: str) -> str:
     """Remove ANSI escape sequences and control characters from untrusted input."""
     if not text:
         return text
-    # Prevent DoS by capping length
-    text = text[:10000]
     # Remove ANSI escape sequences
     text = ANSI_ESCAPE.sub('', text)
     # Replace newlines with spaces and remove control chars (except tab)
@@ -454,20 +454,43 @@ def interactive_mode() -> None:
                 req = colorize("*", Color.RED)
                 opt = colorize("(opt)", Color.DIM)
 
-                title = strip_ansi(input(f"  Title {req}           : ").strip())
+                title_raw = input(f"  Title {req}           : ").strip()
+                if len(title_raw) > 10000:
+                    print(f"\n  {colorize('Title length must not exceed 10000 characters.', Color.RED)}\n")
+                    continue
+                title = strip_ansi(title_raw)
                 if not title:
                     print(f"\n  {colorize('Title is required.', Color.RED)}\n")
                     continue
 
-                price_input = strip_ansi(input(f"  Price ($) {req}       : ").strip())
+                price_raw = input(f"  Price ($) {req}       : ").strip()
+                if len(price_raw) > 100:
+                    print(f"\n  {colorize('Price input length must not exceed 100 characters.', Color.RED)}\n")
+                    continue
+                price_input = strip_ansi(price_raw)
+
                 price = parse_price(price_input)
                 if price is None:
                     print(f"\n  {colorize('Could not parse a valid price from that input.', Color.RED)}\n")
                     continue
 
-                condition   = strip_ansi(input(f"  Condition {opt}   : ").strip())
-                description = strip_ansi(input(f"  Description {opt} : ").strip())
-                source      = strip_ansi(input(f"  Source {opt}      : ").strip())
+                condition_raw   = input(f"  Condition {opt}   : ").strip()
+                if len(condition_raw) > 10000:
+                    print(f"\n  {colorize('Condition length must not exceed 10000 characters.', Color.RED)}\n")
+                    continue
+                condition = strip_ansi(condition_raw)
+
+                description_raw = input(f"  Description {opt} : ").strip()
+                if len(description_raw) > 10000:
+                    print(f"\n  {colorize('Description length must not exceed 10000 characters.', Color.RED)}\n")
+                    continue
+                description = strip_ansi(description_raw)
+
+                source_raw      = input(f"  Source {opt}      : ").strip()
+                if len(source_raw) > 10000:
+                    print(f"\n  {colorize('Source length must not exceed 10000 characters.', Color.RED)}\n")
+                    continue
+                source = strip_ansi(source_raw)
 
                 listing = Listing(
                     title=title,
@@ -531,6 +554,17 @@ def main() -> None:
         if args.price <= 0:
             print(colorize("Error: --price must be a positive number.", Color.RED), file=sys.stderr)
             sys.exit(1)
+
+        # Validate input lengths to prevent DoS
+        for arg_name, arg_val in [
+            ("title", args.title),
+            ("condition", args.condition),
+            ("description", args.description),
+            ("source", args.source)
+        ]:
+            if arg_val and len(arg_val) > 10000:
+                print(colorize(f"Error: {arg_name} length must not exceed 10000 characters.", Color.RED), file=sys.stderr)
+                sys.exit(1)
 
         listing = Listing(
             title=strip_ansi(args.title),
