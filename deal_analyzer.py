@@ -66,8 +66,6 @@ def sanitize_text(text: str) -> str:
     """Remove ANSI escape sequences and control characters from untrusted input."""
     if not text:
         return text
-    # Prevent DoS by capping length
-    text = text[:10000]
     # Remove ANSI escape sequences
     text = ANSI_ESCAPE.sub('', text)
     # Replace newlines with spaces and remove control chars (except tab)
@@ -82,6 +80,8 @@ class Listing:
     source:      str = ""
 
     def __post_init__(self):
+        if any(len(f) > 10000 for f in [self.title, self.description, self.condition, self.source]):
+            raise ValueError("Input fields cannot exceed 10,000 characters.")
         self.title = sanitize_text(self.title)
         self.description = sanitize_text(self.description)
         self.condition = sanitize_text(self.condition)
@@ -469,13 +469,17 @@ def interactive_mode() -> None:
                 description = strip_ansi(input(f"  Description {opt} : ").strip())
                 source      = strip_ansi(input(f"  Source {opt}      : ").strip())
 
-                listing = Listing(
-                    title=title,
-                    price=price,
-                    condition=condition,
-                    description=description,
-                    source=source,
-                )
+                try:
+                    listing = Listing(
+                        title=title,
+                        price=price,
+                        condition=condition,
+                        description=description,
+                        source=source,
+                    )
+                except ValueError as e:
+                    print(f"\n  {colorize(str(e), Color.RED)}\n")
+                    continue
                 result = score_listing(listing)
                 print_result(result)
 
@@ -532,13 +536,18 @@ def main() -> None:
             print(colorize("Error: --price must be a positive number.", Color.RED), file=sys.stderr)
             sys.exit(1)
 
-        listing = Listing(
-            title=strip_ansi(args.title),
-            price=args.price,
-            condition=strip_ansi(args.condition or ""),
-            description=strip_ansi(args.description or ""),
-            source=strip_ansi(args.source or ""),
-        )
+        try:
+            listing = Listing(
+                title=strip_ansi(args.title),
+                price=args.price,
+                condition=strip_ansi(args.condition or ""),
+                description=strip_ansi(args.description or ""),
+                source=strip_ansi(args.source or ""),
+            )
+        except ValueError as e:
+            print(colorize(f"Error: {e}", Color.RED), file=sys.stderr)
+            sys.exit(1)
+
         result = score_listing(listing)
         print_result(result)
         return
