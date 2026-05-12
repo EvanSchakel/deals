@@ -82,5 +82,14 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("\n", sanitized)
         self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
 
+    def test_parse_price_dos_prevention(self):
+        from deal_analyzer import parse_price
+        # Create a string with a huge number of digits
+        huge_number = "1" * 100000
+        # If the length validation is not present, parsing this could take a long time or raise an unexpected error.
+        # With the fix, it should quickly return None.
+        result = parse_price(huge_number)
+        self.assertIsNone(result)
+
 if __name__ == '__main__':
     unittest.main()

@@ -120,6 +120,9 @@ def parse_price(raw: str) -> Optional[float]:
     raw = _PRICE_STRIP_RE.sub("", str(raw or ""))
     for token in raw.split():
         digits = _PRICE_DIGITS_RE.sub("", token)
+        # Prevent DoS: Python's float() can be slow on huge strings
+        if len(digits) > 30:
+            continue
         try:
             value = float(digits)
             if 50 < value < 30_000:
