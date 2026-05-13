@@ -46,7 +46,9 @@ ANSI_ESCAPE = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape sequences from a string."""
-    return ANSI_ESCAPE.sub('', text)
+    if not text.isascii() or '\x1b' in text:
+        return ANSI_ESCAPE.sub('', text)
+    return text
 
 
 # ── Core data types ───────────────────────────────────────────────────────────
@@ -68,8 +70,9 @@ def sanitize_text(text: str) -> str:
         return text
     # Prevent DoS by capping length
     text = text[:10000]
-    # Remove ANSI escape sequences
-    text = ANSI_ESCAPE.sub('', text)
+    # Remove ANSI escape sequences (optimized with fast-path)
+    if not text.isascii() or '\x1b' in text:
+        text = ANSI_ESCAPE.sub('', text)
     # Replace newlines with spaces and remove control chars (except tab)
     return text.translate(_SANITIZE_TRANS)
 
@@ -131,9 +134,6 @@ def parse_price(raw: str) -> Optional[float]:
 
 # ── Scam detection ────────────────────────────────────────────────────────────
 
-def _check_phrases(text: str, phrases: list[str], label: str) -> list[str]:
-    return [f"[{label}] {phrase}" for phrase in phrases if phrase in text]
-
 def check_scam(text: str) -> tuple[str, list[str]]:
     """
     Scan listing text for scam / red-flag phrases.
@@ -143,13 +143,26 @@ def check_scam(text: str) -> tuple[str, list[str]]:
     lower = text.lower()
     signals: list[str] = []
 
-    signals.extend(_check_phrases(lower, SCAM_HIGH, "HIGH"))
-    signals.extend(_check_phrases(lower, SCAM_MEDIUM, "MEDIUM"))
-    signals.extend(_check_phrases(lower, SCAM_FLAGS, "FLAG"))
+    has_high = False
+    has_medium = False
 
-    if any("[HIGH]" in s for s in signals):
+    for phrase in SCAM_HIGH:
+        if phrase in lower:
+            signals.append(f"[HIGH] {phrase}")
+            has_high = True
+
+    for phrase in SCAM_MEDIUM:
+        if phrase in lower:
+            signals.append(f"[MEDIUM] {phrase}")
+            has_medium = True
+
+    for phrase in SCAM_FLAGS:
+        if phrase in lower:
+            signals.append(f"[FLAG] {phrase}")
+
+    if has_high:
         return "high", signals
-    if any("[MEDIUM]" in s for s in signals):
+    if has_medium:
         return "medium", signals
     if signals:
         return "low", signals
