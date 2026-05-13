@@ -82,5 +82,32 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("\n", sanitized)
         self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
 
+    def test_parse_args_price_dos(self):
+        # The parser should reject excessively long strings for the float conversion
+        with patch('sys.argv', ['deal_analyzer.py', '--title', 'Test', '--price', '1'*150]):
+            with self.assertRaises(SystemExit):
+                with patch('sys.stderr', new=io.StringIO()):
+                    from deal_analyzer import parse_args
+                    parse_args()
+
+    @patch('builtins.input')
+    def test_interactive_input_length_limits(self, mock_input):
+        # Sequence of inputs testing various lengths
+        mock_input.side_effect = [
+            'score',
+            '1' * 15000, # title too long
+            'score',
+            'Title',
+            '1' * 150,   # price too long
+            'quit'
+        ]
+        with patch('sys.stdout', new=io.StringIO()) as mock_out:
+            from deal_analyzer import interactive_mode
+            interactive_mode()
+            output = mock_out.getvalue()
+            self.assertIn('Title input is too long', output)
+            self.assertIn('Price input is too long', output)
+
+
 if __name__ == '__main__':
     unittest.main()
