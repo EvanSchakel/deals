@@ -458,16 +458,33 @@ def interactive_mode() -> None:
                 if not title:
                     print(f"\n  {colorize('Title is required.', Color.RED)}\n")
                     continue
+                if len(title) > 10000:
+                    print(f"\n  {colorize('Title input is too long.', Color.RED)}\n")
+                    continue
 
                 price_input = strip_ansi(input(f"  Price ($) {req}       : ").strip())
+                if len(price_input) > 100:
+                    print(f"\n  {colorize('Price input is too long.', Color.RED)}\n")
+                    continue
                 price = parse_price(price_input)
                 if price is None:
                     print(f"\n  {colorize('Could not parse a valid price from that input.', Color.RED)}\n")
                     continue
 
                 condition   = strip_ansi(input(f"  Condition {opt}   : ").strip())
+                if len(condition) > 10000:
+                    print(f"\n  {colorize('Condition input is too long.', Color.RED)}\n")
+                    continue
+
                 description = strip_ansi(input(f"  Description {opt} : ").strip())
+                if len(description) > 100000:
+                    print(f"\n  {colorize('Description input is too long.', Color.RED)}\n")
+                    continue
+
                 source      = strip_ansi(input(f"  Source {opt}      : ").strip())
+                if len(source) > 10000:
+                    print(f"\n  {colorize('Source input is too long.', Color.RED)}\n")
+                    continue
 
                 listing = Listing(
                     title=title,
@@ -494,6 +511,11 @@ def interactive_mode() -> None:
 # ── One-shot CLI mode ─────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
+    def _safe_float(val: str) -> float:
+        if len(val) > 100:
+            raise argparse.ArgumentTypeError("Price input too long")
+        return float(val)
+
     parser = argparse.ArgumentParser(
         prog="deal_analyzer",
         description="Score a used/refurbished tech listing from the command line.",
@@ -506,7 +528,7 @@ Examples:
         """,
     )
     parser.add_argument("--title",         type=str,   help="Listing title")
-    parser.add_argument("--price",         type=float, help="Listed price in USD")
+    parser.add_argument("--price",         type=_safe_float, help="Listed price in USD")
     parser.add_argument("--condition",     type=str,   default="", help="Condition (e.g. Like New, Good)")
     parser.add_argument("--description",   type=str,   default="", help="Listing description text")
     parser.add_argument("--source",        type=str,   default="", help="Source (e.g. eBay, Swappa)")
