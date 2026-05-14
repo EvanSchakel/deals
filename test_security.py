@@ -82,5 +82,24 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("\n", sanitized)
         self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
 
+    def test_float_conversion_dos(self):
+        from deal_analyzer import _safe_float, parse_price
+        import argparse
+
+        # Test _safe_float raises ArgumentTypeError on long input
+        long_input = "1" * 31
+        with self.assertRaises(argparse.ArgumentTypeError):
+            _safe_float(long_input)
+
+        # Test _safe_float works on valid input
+        self.assertEqual(_safe_float("123.45"), 123.45)
+
+        # Test parse_price handles long tokens gracefully by ignoring them
+        # Should return None because the long token is skipped, and no valid price is found
+        self.assertIsNone(parse_price(long_input))
+
+        # Test parse_price works on valid input
+        self.assertEqual(parse_price("Price: $1299"), 1299.0)
+
 if __name__ == '__main__':
     unittest.main()
