@@ -46,7 +46,10 @@ ANSI_ESCAPE = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape sequences from a string."""
-    return ANSI_ESCAPE.sub('', text)
+    # Fast path: skip expensive regex if no ANSI escapes or C1 control chars are present
+    if '\x1b' in text or not text.isascii():
+        return ANSI_ESCAPE.sub('', text)
+    return text
 
 
 # ── Core data types ───────────────────────────────────────────────────────────
@@ -68,8 +71,9 @@ def sanitize_text(text: str) -> str:
         return text
     # Prevent DoS by capping length
     text = text[:10000]
-    # Remove ANSI escape sequences
-    text = ANSI_ESCAPE.sub('', text)
+    # Fast path: Remove ANSI escape sequences only if necessary
+    if '\x1b' in text or not text.isascii():
+        text = ANSI_ESCAPE.sub('', text)
     # Replace newlines with spaces and remove control chars (except tab)
     return text.translate(_SANITIZE_TRANS)
 
