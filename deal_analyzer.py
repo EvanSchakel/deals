@@ -68,8 +68,10 @@ def sanitize_text(text: str) -> str:
         return text
     # Prevent DoS by capping length
     text = text[:10000]
-    # Remove ANSI escape sequences
-    text = ANSI_ESCAPE.sub('', text)
+    # Fast path: skip expensive ANSI regex if no escape or extended characters present
+    if '\x1b' in text or not text.isascii():
+        # Remove ANSI escape sequences
+        text = ANSI_ESCAPE.sub('', text)
     # Replace newlines with spaces and remove control chars (except tab)
     return text.translate(_SANITIZE_TRANS)
 
