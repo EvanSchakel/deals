@@ -82,5 +82,26 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("\n", sanitized)
         self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
 
+    def test_price_dos_prevention(self):
+        from deal_analyzer import _safe_float, parse_price
+
+        # Test argparse custom float conversion limit
+        with self.assertRaises(argparse.ArgumentTypeError):
+            _safe_float("1" * 100)
+
+        # Ensure normal float strings still work
+        self.assertEqual(_safe_float("1234.50"), 1234.50)
+
+        # Test parse_price length capping preventing regex DoS
+        # (It should quickly return None or the capped value without hanging)
+        import time
+        start = time.time()
+        res = parse_price("1" * 100_000)
+        duration = time.time() - start
+
+        # The operation should be virtually instantaneous
+        self.assertLess(duration, 0.1)
+        self.assertIsNone(res) # The capped string doesn't match standard price thresholds because it will be interpreted as just "111...1" > 30000 limit
+
 if __name__ == '__main__':
     unittest.main()
