@@ -1,3 +1,6 @@
 ## 2024-05-24 - Interactive Form Clarity
 **Learning:** CLI tool users benefit from explicit visual cues for optional fields, just as much as GUI users do. Using dimmed text for `(opt)` indicators is an effective way to guide the user without adding cognitive load or disrupting layout alignment.
 **Action:** When working on CLI forms, ensure optional fields are explicitly marked and leverage existing color/formatting utilities (like `Color.DIM`) for visual hierarchy. Maintain column alignment by ensuring the visual length of prompts with colors are accounted for.
+## 2026-05-16 - Explicit CLI Shortcuts and Actionable Error Examples
+**Learning:** When adding keyboard shortcuts to primary menu prompts (e.g., `[s]core`), users also expect the corresponding `help` menu and fallback error messages to consistently reflect these shortcuts. Furthermore, input validation errors are significantly more helpful when they provide an explicit, actionable example (e.g., "Please enter a number, e.g., 1200 or 1200.50") rather than just stating that parsing failed.
+**Action:** Always verify that shortcut indicators are applied consistently across all related prompt output, and ensure that validation errors include clear examples of the expected input format.
