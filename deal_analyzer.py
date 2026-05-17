@@ -51,6 +51,15 @@ def strip_ansi(text: str) -> str:
 
 # ── Core data types ───────────────────────────────────────────────────────────
 
+def _safe_float(val: str) -> float:
+    """Safely convert a string to a float, preventing DoS from excessively long strings."""
+    if len(str(val)) > 30:
+        raise argparse.ArgumentTypeError("Price input is too long.")
+    try:
+        return float(val)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid float value: '{val}'")
+
 # Precompute translation table for sanitizing control characters and newlines
 # This is faster than using multiple str.replace() and re.sub() calls.
 _SANITIZE_TRANS = str.maketrans(
@@ -120,6 +129,8 @@ def parse_price(raw: str) -> Optional[float]:
     raw = _PRICE_STRIP_RE.sub("", str(raw or ""))
     for token in raw.split():
         digits = _PRICE_DIGITS_RE.sub("", token)
+        if len(digits) > 30:
+            continue
         try:
             value = float(digits)
             if 50 < value < 30_000:
@@ -506,7 +517,7 @@ Examples:
         """,
     )
     parser.add_argument("--title",         type=str,   help="Listing title")
-    parser.add_argument("--price",         type=float, help="Listed price in USD")
+    parser.add_argument("--price",         type=_safe_float, help="Listed price in USD")
     parser.add_argument("--condition",     type=str,   default="", help="Condition (e.g. Like New, Good)")
     parser.add_argument("--description",   type=str,   default="", help="Listing description text")
     parser.add_argument("--source",        type=str,   default="", help="Source (e.g. eBay, Swappa)")
