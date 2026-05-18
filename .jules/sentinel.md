@@ -10,3 +10,7 @@
 **Vulnerability:** Denial of Service (DoS) via memory exhaustion or integer string conversion limits (`ValueError: Exceeds the limit for integer string conversion`).
 **Learning:** Python limits large string-to-int conversions by default (4300 digits). Processing arbitrarily large strings in regexes or conversions can crash the application or exhaust memory.
 **Prevention:** Always cap untrusted input length at the earliest ingestion point (e.g. `text = text[:10000]`), and validate length before type conversions (e.g. `len(r) <= 10` before `int(r)`).
+## 2024-05-24 - Float conversion DoS
+**Vulnerability:** Denial of Service (DoS) vulnerability via untrusted inputs fed directly to `float()` or `argparse` using `type=float`.
+**Learning:** Unlike `int()`, Python's `float()` does not have a default string length limit. Converting massive strings to float can exhaust memory or crash the process. This also affects CLI applications that use `argparse` with `type=float`.
+**Prevention:** Always implement explicit string length limits on user input (e.g., maximum 30 characters) before passing the string to `float()`. Use custom type validation functions in `argparse` to enforce these limits.

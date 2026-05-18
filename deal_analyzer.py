@@ -120,6 +120,9 @@ def parse_price(raw: str) -> Optional[float]:
     raw = _PRICE_STRIP_RE.sub("", str(raw or ""))
     for token in raw.split():
         digits = _PRICE_DIGITS_RE.sub("", token)
+        # Prevent DoS from overly long inputs to float()
+        if len(digits) > 30:
+            continue
         try:
             value = float(digits)
             if 50 < value < 30_000:
@@ -493,6 +496,15 @@ def interactive_mode() -> None:
 
 # ── One-shot CLI mode ─────────────────────────────────────────────────────────
 
+def _safe_float(value: str) -> float:
+    """Safely convert string to float, capping length to prevent DoS."""
+    if len(value) > 30:
+        raise argparse.ArgumentTypeError(f"Price input exceeds maximum allowed length (30).")
+    try:
+        return float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid float value: '{value}'")
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="deal_analyzer",
@@ -506,7 +518,7 @@ Examples:
         """,
     )
     parser.add_argument("--title",         type=str,   help="Listing title")
-    parser.add_argument("--price",         type=float, help="Listed price in USD")
+    parser.add_argument("--price",         type=_safe_float, help="Listed price in USD")
     parser.add_argument("--condition",     type=str,   default="", help="Condition (e.g. Like New, Good)")
     parser.add_argument("--description",   type=str,   default="", help="Listing description text")
     parser.add_argument("--source",        type=str,   default="", help="Source (e.g. eBay, Swappa)")

@@ -82,5 +82,21 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("\n", sanitized)
         self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
 
+    def test_safe_float_length_limit(self):
+        from deal_analyzer import _safe_float
+        with self.assertRaises(argparse.ArgumentTypeError):
+            _safe_float("1" * 31)
+        self.assertEqual(_safe_float("1" * 30), float("1" * 30))
+
+    def test_parse_price_length_limit(self):
+        from deal_analyzer import parse_price
+        # Exceeds 30 characters
+        long_price = "1" * 31
+        self.assertIsNone(parse_price(long_price))
+
+        # Within 30 characters and valid price bounds
+        good_price = "1500"
+        self.assertEqual(parse_price(good_price), float(good_price))
+
 if __name__ == '__main__':
     unittest.main()
