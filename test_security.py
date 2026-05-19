@@ -82,5 +82,22 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("\n", sanitized)
         self.assertEqual(sanitized, "MacBook Air 13\" M5 24GB   Listed: $100.00   Matched: MacBook Air 13\" M5 24GB ")
 
+    def test_parse_price_dos_prevention(self):
+        from deal_analyzer import parse_price
+        # Ensure that parsing an excessively long price string doesn't crash or hang
+        long_price = "$" + "1" + "0" * 50000
+        self.assertIsNone(parse_price(long_price))
+
+    def test_safe_float_dos_prevention(self):
+        from deal_analyzer import _safe_float
+        import argparse
+        # Ensure _safe_float raises ArgumentTypeError for excessively long strings
+        long_val = "1" + "0" * 50000
+        with self.assertRaises(argparse.ArgumentTypeError):
+            _safe_float(long_val)
+
+        # Ensure _safe_float works for normal values
+        self.assertEqual(_safe_float("123.45"), 123.45)
+
 if __name__ == '__main__':
     unittest.main()
