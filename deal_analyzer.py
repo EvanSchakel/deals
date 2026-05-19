@@ -431,7 +431,7 @@ def interactive_mode() -> None:
     print(f"  {colorize('🍎  Tech Deal Analyzer', Color.BOLD)}")
     print(f"  {colorize('Paste a listing, get a deal score.', Color.DIM)}")
     print(colorize('═' * 60, Color.BOLD))
-    print("  Commands: score | products | quit\n")
+    print("  Commands: [s]core | [p]roducts | [q]uit\n")
 
     while True:
         try:
@@ -462,7 +462,7 @@ def interactive_mode() -> None:
                 price_input = strip_ansi(input(f"  Price ($) {req}       : ").strip())
                 price = parse_price(price_input)
                 if price is None:
-                    print(f"\n  {colorize('Could not parse a valid price from that input.', Color.RED)}\n")
+                    print(f"\n  {colorize('Could not parse a valid price from that input. Please enter a valid price, e.g., 1200 or 1200.50.', Color.RED)}\n")
                     continue
 
                 condition   = strip_ansi(input(f"  Condition {opt}   : ").strip())
@@ -483,12 +483,12 @@ def interactive_mode() -> None:
                 print("\n  Cancelled.\n")
 
         elif cmd == "help":
-            print("  score      — analyze a listing")
-            print("  products   — list all tracked products and thresholds")
-            print("  quit       — exit\n")
+            print("  [s]core    — analyze a listing")
+            print("  [p]roducts — list all tracked products and thresholds")
+            print("  [q]uit     — exit\n")
 
         else:
-            print(f"  {colorize('Unknown command. Try: score, products, quit', Color.DIM)}\n")
+            print(f"  {colorize('Unknown command. Try: [s]core, [p]roducts, [q]uit', Color.DIM)}\n")
 
 
 # ── One-shot CLI mode ─────────────────────────────────────────────────────────
