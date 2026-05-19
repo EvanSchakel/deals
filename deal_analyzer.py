@@ -46,7 +46,9 @@ ANSI_ESCAPE = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape sequences from a string."""
-    return ANSI_ESCAPE.sub('', text)
+    if '\x1b' in text or not text.isascii():
+        return ANSI_ESCAPE.sub('', text)
+    return text
 
 
 # ── Core data types ───────────────────────────────────────────────────────────
@@ -106,6 +108,7 @@ class AnalysisResult:
 _PRICE_STRIP_RE = re.compile(r"(to|[-–])\s*\$?[\d,]+")
 # Matches any character that is NOT a digit or a period. Used to clean price strings.
 _PRICE_DIGITS_RE = re.compile(r"[^\d.]")
+_HAS_DIGIT_RE = re.compile(r"\d")
 # Extracts numbers followed by "gb" (ignoring whitespace) to find RAM sizes.
 _RAM_RE = re.compile(r"(\d+)\s*gb")
 # Matches specific storage sizes (512, 1tb, 2tb) to verify storage requirements.
@@ -116,9 +119,14 @@ def parse_price(raw: str) -> Optional[float]:
     Extract the first plausible price from a string like '$1,299' or '1299.99'.
     Returns None if nothing looks like a price.
     """
-    # Strip everything before the first dollar sign
-    raw = _PRICE_STRIP_RE.sub("", str(raw or ""))
-    for token in raw.split():
+    raw_str = str(raw or "")
+    # Only run strip regex if necessary
+    if '-' in raw_str or '–' in raw_str or 'to' in raw_str:
+        raw_str = _PRICE_STRIP_RE.sub("", raw_str)
+    for token in raw_str.split():
+        # Skip tokens with no digits before running expensive substitution
+        if not _HAS_DIGIT_RE.search(token):
+            continue
         digits = _PRICE_DIGITS_RE.sub("", token)
         try:
             value = float(digits)
